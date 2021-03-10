@@ -1,5 +1,15 @@
 let pagina = 1;
 
+const cita = {
+    nombre: '',
+    fecha: '',
+    hora: '',
+    servicios: [
+
+    ]
+}
+
+
 
 document.addEventListener('DOMContentLoaded',() => {
     iniciarApp()
@@ -22,6 +32,22 @@ function iniciarApp() {
 
     //// comprueba la pagina donde se encuantra pára ver que boton mostrar y cual no
     botonesPaginacion()
+
+    ///muestra el resumen de la cita
+    mostrarResumen()
+
+    ////almacena el nombre del cliente
+    nombreCita()
+
+
+    ///almacena la fecha de la cita
+    fechaCita()
+
+    //almacena la hora
+    horaCita()
+
+    /// funcion para deshabilitar dias anteriores
+    deshabilitarFecha()
 }
 
 function mostrarSeccion() {
@@ -37,7 +63,6 @@ function mostrarSeccion() {
     const seccionActual = document.querySelector(`#paso-${pagina}`);
     seccionActual.classList.add('mostrar-seccion');
 
-    
 
     /// elimnar el color resaltado
     const tabAnterior = document.querySelector('.tabs .active');
@@ -49,11 +74,6 @@ function mostrarSeccion() {
     const tab = document.querySelector(`[data-paso="${pagina}"]`);
     tab.classList.add('active');
 
-    
-     //resalta la seccion seleccionada
-    const tab = document.querySelector(`[data-paso="${pagina}"]`);
-    tab.classList.add('active')
-
 }
 
 function cambiarSeccion() {
@@ -64,13 +84,9 @@ function cambiarSeccion() {
             e.preventDefault();
             pagina = parseInt(e.target.dataset.paso);
 
-            // /// se agrega mostrar seccion
-        const seccion = document.querySelector(`#paso-${pagina}`);
-        seccion.classList.add('mostrar-seccion');
+            mostrarSeccion()
 
-        //resalta la seccion seleccionada
-        const tab = document.querySelector(`[data-paso="${pagina}"]`);
-        tab.classList.add('active')
+            botonesPaginacion()
 
         })
     })
@@ -135,10 +151,36 @@ function seleccionarServicio(e) {
 
     if(elemento.classList.contains('active')) {
         elemento.classList.remove('active');
+
+        const id = parseInt( elemento.dataset.idServicio );
+
+        eliminarServicio(id)
     } else {
         elemento.classList.add('active');
+
+
+        const servicioObj = {
+            id: parseInt( elemento.dataset.idServicio),
+            nombre: elemento.firstElementChild.textContent,
+            precio: elemento.firstElementChild.nextElementSibling.textContent
+        }
+    
+
+        agregarServicion(servicioObj)
     }
 
+}
+
+/// funcioes para agregar servicios a la compra
+
+function eliminarServicio(id) {
+    const { servicios } = cita;
+    cita.servicios = servicios.filter( servicio => servicio.id !== id);
+}
+
+function agregarServicion(servicioObj) {
+    const { servicios } = cita;
+    cita.servicios = [...servicios, servicioObj];
 }
 
 
@@ -169,12 +211,230 @@ function botonesPaginacion() {
 
     if(pagina === 1) {
         paginaAnterior.classList.add('ocultar');
-    } else if (pagina === 2) {
-        paginaAnterior.classList.remove('ocultar');
-        paginaSiguiente.classList.remove('ocultar');
     } else if (pagina === 3) {
         paginaSiguiente.classList.add('ocultar');
+        paginaAnterior.classList.remove('ocultar');
+
+        mostrarResumen(); /// estamos en la pagina de resumen y deberia cargar la cita
+    } else {
+        paginaSiguiente.classList.remove('ocultar');
+        paginaAnterior.classList.remove('ocultar');
     }
 
     mostrarSeccion()
+}
+
+//validacion de informacion 
+
+function mostrarResumen() {
+    // destructutacion 
+    const { nombre, fecha, hora, servicios} = cita;
+
+    /// selecciona el resumen
+    const resumentDiv = document.querySelector('.contenido-resumen');
+
+    /// lipia el html
+    while(resumentDiv.firstChild) {
+        resumentDiv.removeChild(resumentDiv.firstChild);
+    }
+
+
+    ////validacion 
+
+    if(Object.values(cita).includes('')) {
+
+        const mensajeForm = document.createElement('P')
+        mensajeForm.textContent = 'Falta seleccionar el servicio o completar los datos.';
+        mensajeForm.classList.add('invalidar-cita');
+
+        //aca mostramos el mensaje
+        resumentDiv.appendChild(mensajeForm);
+
+        return
+    }
+
+    let cantidad = 0;
+
+    const headingCita = document.createElement('H3');
+    headingCita.textContent = 'Resumen de Cita';
+
+    ///mostrar resumen
+    const nombreCita = document.createElement('P');
+    nombreCita.innerHTML = `<span>Nombre:</span> ${nombre}`;
+
+    const fechaCita = document.createElement('P');
+    fechaCita.innerHTML = `<span>Fecha:</span> ${fecha}`;
+
+    const horaCita = document.createElement('P');
+    horaCita.innerHTML = `<span>Hora:</span> ${hora}`;
+
+    const servicioCita = document.createElement('DIV');
+    servicioCita.classList.add('resumen-servicios');
+
+    const headingServicios = document.createElement('H3');
+    headingServicios.textContent = 'Resumen de servicos';
+    servicioCita.appendChild(headingServicios);
+
+
+
+
+    //////////////////////////////////////////////////////////////////
+    servicios.forEach(servicio => {
+        const { nombre, precio } = servicio
+        const contenedorServicio = document.createElement('DIV');
+        contenedorServicio.classList.add('contenedor-servicio');
+
+        const textoServicio = document.createElement('P');
+        textoServicio.textContent = nombre;
+
+        const precioServicio = document.createElement('P');
+        precioServicio.textContent = precio;
+        precioServicio.classList.add('precio');
+
+        const totalServicio = precio.split('$');
+
+        cantidad += parseInt(totalServicio[1].trim());
+    
+
+
+        contenedorServicio.appendChild(textoServicio);
+        contenedorServicio.appendChild(precioServicio);
+        
+        servicioCita.appendChild(contenedorServicio);
+        
+    });
+    /////////////////////////////////////////////////////////////////////
+    
+    resumentDiv.appendChild(headingCita);
+    resumentDiv.appendChild(nombreCita);
+    resumentDiv.appendChild(fechaCita);
+    resumentDiv.appendChild(horaCita);
+
+    resumentDiv.appendChild(servicioCita);
+
+
+    const cantidadPagar = document.createElement('P');
+    cantidadPagar.classList.add('total')
+    cantidadPagar.innerHTML = `<span>Total a pagar:</span> $${cantidad}`;
+
+    resumentDiv.appendChild(cantidadPagar);
+}
+
+
+//// funcion del almacenamiento de la cita 
+function nombreCita() {
+    const nombreInput = document.querySelector('#nombre');
+
+    nombreInput.addEventListener('input', (e) => {
+        const nombreTexto = e.target.value.trim();
+
+        ///validacion de nombreTexto
+        if( nombreTexto === '' || nombreTexto.length < 3) {
+          
+        mostrarAlerta('Nombre no valido', 'error')
+
+        } else {
+            const alerta = document.querySelector('.alerta');
+            cita.nombre = nombreTexto;
+
+            if(alerta) {
+                alerta.remove()
+            }
+        }
+
+    })
+}
+
+
+//// alerta de error 
+
+function mostrarAlerta(mensaje, tipo) {
+
+    ///esto sirve para no imprimir la alerta varias veces
+    const alertaPrevia = document.querySelector('.alerta');
+    if ( alertaPrevia ) {
+        return
+    }
+
+    ////////////////////////////////////////////////////////////
+    const alerta = document.createElement('DIV');
+    alerta.textContent = mensaje;
+    alerta.classList.add('alerta');
+
+    if(tipo === 'error') {
+        alerta.classList.add('error')
+    }
+
+
+    ///instertar en el html
+    const formulario = document.querySelector('.formulario');
+    formulario.appendChild(alerta);
+
+    ///ELiminar la alerta despues de 3 segundo
+    setTimeout(() => {
+        alerta.remove()
+    }, 3000)
+}
+
+function fechaCita() {
+    const fechaInput = document.querySelector('#fecha');
+
+    fechaInput.addEventListener('input', (e) => {
+        const dia = new Date(e.target.value).getUTCDay();
+
+        if([0].includes(dia)) {
+
+            e.preventDefault();
+            fechaInput.value = '';
+            mostrarAlerta('El domingo no trabajamos, por favor seleccione otro dia.', 'error');
+
+        } else {
+            cita.fecha = fechaInput.value;
+        }
+
+    })
+}
+
+function deshabilitarFecha() {
+    const inputFecha = document.querySelector('#fecha');
+
+    const fechaAhora = new Date();
+
+    const year = fechaAhora.getUTCFullYear();
+    const mes = fechaAhora.getMonth() +1;
+    const dia = fechaAhora.getDate() +1;
+    
+    //// aca se hizo esta metodo ya que para poder bloquear la fecha en html debomos contar con 2 digitos tanto en dia como en mes sino de lo contrario no va a funcionar
+
+    const fechaDeshabilitar = `${year}-${mes < 10 ?  `0${mes}`: mes }-${dia < 10 ? `0${dia}`:dia}`;
+
+    // inputFecha.setAttribute("value", fechaDeshabilitar);
+    // inputFecha.setAttribute("min", fechaDeshabilitar);
+
+    inputFecha.min = fechaDeshabilitar;
+
+
+
+
+}
+
+function horaCita() {
+    const horaInput = document.querySelector('#hora');
+
+    horaInput.addEventListener('input', (e) => {
+        const horaCita = e.target.value;
+        const hora = horaCita.split(':');
+
+        if(hora[0] < 10 || hora[0] > 20) {
+            
+           mostrarAlerta('Horario no disponible', 'error');
+           setTimeout(() => {
+               horaInput.value = '';
+           }, 2000)
+            
+        } else {
+            cita.hora = horaCita;
+        }
+    })
+
 }
